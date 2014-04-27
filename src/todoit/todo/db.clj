@@ -1,9 +1,25 @@
 (ns todoit.todo.db
-  (:require [datomic.api :as d]))
+  (:require [datomic.api :as d]
+            [environ.core :as env]))
 
-(defonce uri (str "datomic:mem://" (gensym "todos")))
+(def aws-creds
+  {:access-key (env/env :aws-access-key)
+   :secret-key (env/env :aws-secret-key)})
+
+;; (defonce uri (str "datomic:mem://" (gensym "todos")))
+
+(defonce uri (str "datomic:ddb://us-east-1/your-system-name/test-db"
+                  "?aws_access_key_id=" (:access-key aws-creds)
+                  "&aws_secret_key=" (:secret-key aws-creds)))
+
 (d/create-database uri)
 (def conn (d/connect uri))
+
+(defn communities [db]
+  (d/q '[:find ?c :where [?c :community/name]]
+       db))
+;; (communities (d/db conn))
+
 
 (def schema-tx (->> "todos.edn"
                     clojure.java.io/resource
